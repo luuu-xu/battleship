@@ -1,4 +1,4 @@
-import { Ship, Gameboard, Player } from "./index";
+import { Ship, Gameboard, Player } from "./factory-functions";
 import { describe, test } from "@jest/globals";
 
 describe('Ship()', () => {
@@ -211,8 +211,19 @@ describe('Player()', () => {
       expect(player.gameboard.getAttackedCoordinates().length).toBe(2);
     });
   });
+
+  // describe('aiNextAttack()', () => {
+  //   const player = Player('me');
+  //   const ai = Player('ai');
+  //   player.gameboard = Gameboard();
+
+  //   test('aiNextAttack() works normally', () => {
+  //     expect(ai.aiNextAttack(player.gameboard, [5, 5])).toEqual([[4, 5], [6, 5], [5, 4], [5, 6]]);
+  //   });
+
+  //   test('aiNextAttack() works well with edge cases', () => {
+  //     expect(ai.aiNextAttack(player.gameboard, [0, 1])).toEqual([[1, 1], [0, 0], [0, 2]]);
+  //     expect(ai.aiNextAttack(player.gameboard, [9, 9])).toEqual([[8, 9], [9, 8]]);
+  //   });
+  // });
 });
-
-// describe('gameFlow module', () => {
-
-// });

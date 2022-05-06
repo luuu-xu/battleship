@@ -1,136 +1,5 @@
 import './style.css';
-
-const Ship = (shipIndex, length) => {
-  const _shipIndex = shipIndex;
-  const _length = length;
-  let _map = Array(_length).fill(_shipIndex);
-  const getShipIndex = () => _shipIndex;
-  const getMap = () => _map;
-  const hit = (n) => {
-    if (n >= 0 && n <= _map.length) {
-      _map[n] = 'h';
-    };
-  };
-  const isSunk = () => {
-    return (_map.every(element => element === 'h'));
-  };
-  return {getShipIndex,
-          getMap, 
-          hit, 
-          isSunk};
-};
-
-const Gameboard = () => {
-  let _map = Array(10).fill(null).map(() => Array(10).fill(null));
-  let _shipList = [];
-  let _shipIndex = 0;
-  let _attackedCoordinates = [];
-  let _missedCoordinates = [];
-  const getMap = () => _map;
-  const getShipList = () => _shipList;
-  const getAttackedCoordinates = () => _attackedCoordinates;
-  const getMissedCoordinates = () => _missedCoordinates;
-  const _checkPlaceShipAllow = (length, coordinate) => {
-    const x = coordinate[0];
-    const y = coordinate[1];
-    for (let i = 0; i < length; i++) {
-      if (_map[x][y + i] !== null) {
-        return false;
-      };
-    };
-    return true;
-  };
-  const placeShip = (length, coordinate) => {
-    const x = coordinate[0];
-    const y = coordinate[1];
-
-    if ((y + length) > 10) {
-      return 'error, outside of gameboard';
-    } else if (!_checkPlaceShipAllow(length, coordinate)) {
-      return 'error, ship already in place';
-    } else {
-      _map[x].fill(_shipIndex, y, y + length);
-    };
-
-    const ship = Ship(_shipIndex, length);
-    ship.startCoordinate = coordinate;
-    _shipList.push(ship);
-  
-    _shipIndex++;
-  };
-  const placeShips = (placeShipArray) => {
-    placeShipArray.forEach(element => {
-      placeShip(element[0], element[1]);
-    });
-  };
-  const receiveAttack = (coordinate) => {
-    const x = coordinate[0];
-    const y = coordinate[1];
-
-    // hits nothing, records coordinate
-    if (_map[x][y] === null) {
-      _attackedCoordinates.push(coordinate);
-      _missedCoordinates.push(coordinate);
-      // console.log('hits nothing');
-      return false;
-    } else {
-      // hits a ship, sends hit() to the ship
-      const ship = _shipList[_map[x][y]];
-      const n = y - ship.startCoordinate[1];
-      ship.hit(n);
-      _attackedCoordinates.push(coordinate);
-      // console.log('hits ship!');
-      return true;
-    };
-  };
-  const reportAllSunk = () => {
-    return _shipList.every(ship => ship.isSunk());
-  };
-  return {getMap,
-          getShipList,
-          getAttackedCoordinates,
-          getMissedCoordinates,
-          placeShip,
-          placeShips,
-          receiveAttack,
-          reportAllSunk}
-};
-
-const Player = (name) => {
-  let _name = name;
-  const getName = () => _name;
-  const attack = (gameboard, coordinate) => {
-    return gameboard.receiveAttack(coordinate);
-  };
-  const aiAttack = (gameboard) => {
-    const random = () => Math.floor(Math.random() * 10);
-    let randomCoordinate = [random(), random()];
-
-    // uncomment to test 'aiAttack() does not attack twice the same coordinate'
-    // randomCoordinate = [0, 0];
-
-    function checkAttacked () {
-      const attackedCoordinates = gameboard.getAttackedCoordinates();
-      return attackedCoordinates.some(e => JSON.stringify(e) === JSON.stringify(randomCoordinate));
-    };
-    
-    if (!checkAttacked()) {
-      const result = gameboard.receiveAttack(randomCoordinate);
-      return [result, randomCoordinate];
-    } else {
-      while (checkAttacked()) {
-        randomCoordinate = [random(), random()];
-        if (!checkAttacked()) {
-          const result = gameboard.receiveAttack(randomCoordinate);
-          return [result, randomCoordinate];
-        };
-      };
-    };
-  };
-  return {getName,
-          attack,
-          aiAttack}
-};
+import { Ship, Gameboard, Player } from "./factory-functions";
 
 const gameFlow = (() => {
   const player = Player('me');
@@ -148,11 +17,15 @@ const gameFlow = (() => {
   const aiAttack = () => {
     return ai.aiAttack(player.gameboard);
   };
+  const aiNextAttack = (lastHitCoordinate) => {
+    return ai.aiNextAttack(player.gameboard, lastHitCoordinate);
+  };
   return {player,
           ai,
           initialize,
           playerAttack,
-          aiAttack
+          aiAttack,
+          aiNextAttack
           }
 })();
 
@@ -225,24 +98,6 @@ const dom = (() => {
       );
     });
   };
-  const _announcePlayerWon = (isWon) => {
-    const announceDiv = document.querySelector('.announce-con');
-    if (isWon) {
-      announceDiv.innerText = 'You won!';
-    } else {
-      announceDiv.innerText = 'You lost!';
-    };
-    const resetBtn = document.createElement('button');
-    resetBtn.innerText = 'Reset';
-    resetBtn.className = 'reset-btn';
-    resetBtn.addEventListener('click', () => {
-      document.body.replaceChildren();
-      dom.initialize();
-    });
-    announceDiv.append(resetBtn);
-    const boxes = document.querySelectorAll('.box.ai');
-    boxes.forEach(box => {box.outerHTML = box.outerHTML});
-  };
   function _aiBoxListener(box) {
     const coordinate = [box.id[1], box.id[2]];
     const result = gameFlow.playerAttack(coordinate);
@@ -263,10 +118,30 @@ const dom = (() => {
       };
     };
   };
+  let _aiLastHit = false;
+  let _aiLastHitCoordinate;
   function _aiHits() {
-    const aiHitResult = gameFlow.aiAttack();
+    let aiHitResult;
+    if (!_aiLastHit) {
+      aiHitResult = gameFlow.aiAttack();
+      if (aiHitResult[0]) {
+        _aiLastHit = true;
+        _aiLastHitCoordinate = aiHitResult[1];
+      } else {
+        _aiLastHit = false;
+        _aiLastHitCoordinate = null;
+      };
+    } else {
+      aiHitResult = gameFlow.aiNextAttack(_aiLastHitCoordinate);
+      if (aiHitResult[0]) {
+        _aiLastHit = true;
+        _aiLastHitCoordinate = aiHitResult[1];
+      } else {
+        _aiLastHit = false;
+        _aiLastHitCoordinate = null;
+      };
+    };
     const aiCoordinate = aiHitResult[1];
-    // console.log(aiCoordinate);
     const aiHitBox = document.querySelector(`#p${aiCoordinate[0]}${aiCoordinate[1]}`);
     if (!aiHitResult[0]) {
       aiHitBox.innerText = '⋅';
@@ -280,10 +155,26 @@ const dom = (() => {
       };
     };
   };
+  const _announcePlayerWon = (isWon) => {
+    const announceDiv = document.querySelector('.announce-con');
+    if (isWon) {
+      announceDiv.innerText = 'You won!';
+    } else {
+      announceDiv.innerText = 'You lost!';
+    };
+    const resetBtn = document.createElement('button');
+    resetBtn.innerText = 'Reset';
+    resetBtn.className = 'reset-btn';
+    resetBtn.addEventListener('click', () => {
+      document.body.replaceChildren();
+      dom.initialize();
+    });
+    announceDiv.append(resetBtn);
+    const boxes = document.querySelectorAll('.box.ai');
+    boxes.forEach(box => {box.outerHTML = box.outerHTML});
+  };
   return {initialize
           }
 })();
 
 dom.initialize();
-
-export { Ship, Gameboard, Player };
