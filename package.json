@@ -1,0 +1,32 @@
+{
+  "name": "battleship",
+  "version": "1.0.0",
+  "description": "The Battleship project from The Odin Project.",
+  "main": "script.js",
+  "scripts": {
+    "test": "jest",
+    "build": "webpack",
+    "watch-jest": "jest --watch",
+    "watch-webpack": "webpack --watch",
+    "start": "webpack serve"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luuu-xu/battleship.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/luuu-xu/battleship/issues"
+  },
+  "homepage": "https://github.com/luuu-xu/battleship#readme",
+  "devDependencies": {
+    "@babel/preset-env": "^7.16.11",
+    "css-loader": "^6.7.1",
+    "jest": "^27.5.1",
+    "style-loader": "^3.3.1",
+    "webpack": "^5.72.0",
+    "webpack-cli": "^4.9.2",
+    "webpack-dev-server": "^4.8.1"
+  }
+}
