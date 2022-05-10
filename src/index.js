@@ -9,7 +9,22 @@ const gameFlow = (() => {
     // player.gameboard.placeShips([[4, [8, 4]], [3, [5, 5]], [2, [3, 3]], [1, [1, 1]]]);
 
     ai.gameboard = Gameboard();
-    ai.gameboard.placeShips([[4, [2, 2]], [3, [8, 3]], [2, [6, 6]], [1, [0, 9]]]);
+    // ai.gameboard.placeShips([[4, [2, 2]], [3, [8, 3]], [2, [6, 6]], [1, [0, 9]]]);
+    _randomPlaceShips();
+  };
+  const _randomPlaceShips = () => {
+    const shipLengthArray = [4, 3, 3, 2, 2, 2, 1, 1];
+    const random = () => Math.floor(Math.random() * 10);
+    let randomCoordinate = [random(), random()];
+
+    shipLengthArray.forEach(length => {
+      let placeShipResult = ai.gameboard.placeShip(length, randomCoordinate);
+      while (placeShipResult === 'error, ship already in place' 
+      || placeShipResult === 'error, outside of gameboard') {
+        randomCoordinate = [random(), random()];
+        placeShipResult = ai.gameboard.placeShip(length, randomCoordinate);
+      };
+    });
   };
   const playerAttack = (coordinate) => {
     return player.attack(ai.gameboard, coordinate);
@@ -142,6 +157,13 @@ const dom = (() => {
     const fillerDiv = _createDiv('filler-div');
 
     const footerDiv = _createDiv('footer-con');
+    const footer = _createDiv('footer');
+    footer.innerHTML = 'Created by ';
+    const a = document.createElement('a');
+    a.innerText = 'luuu-xu';
+    a.setAttribute('href', 'https://github.com/luuu-xu');
+    footer.append(a);
+    footerDiv.append(footer);
 
     document.body.append(headerDiv, announceDiv, shipStorageDiv, mainDiv, fillerDiv, footerDiv);
 
