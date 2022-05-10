@@ -6,7 +6,7 @@ const gameFlow = (() => {
   const ai = Player('ai');
   const initialize = () => {
     player.gameboard = Gameboard();
-    player.gameboard.placeShips([[4, [8, 4]], [3, [5, 5]], [2, [3, 3]], [1, [1, 1]]]);
+    // player.gameboard.placeShips([[4, [8, 4]], [3, [5, 5]], [2, [3, 3]], [1, [1, 1]]]);
 
     ai.gameboard = Gameboard();
     ai.gameboard.placeShips([[4, [2, 2]], [3, [8, 3]], [2, [6, 6]], [1, [0, 9]]]);
@@ -26,7 +26,87 @@ const gameFlow = (() => {
           playerAttack,
           aiAttack,
           aiNextAttack
-          }
+          };
+})();
+
+const dragDrop = (() => {
+  let _dragged;
+  const initialize = () => {
+    const shipDivs = document.querySelectorAll('.storaged-ship');
+    shipDivs.forEach(ship => {
+      const shipHead = ship.children[0];
+      shipHead.draggable = true;
+      ship.addEventListener('dragstart', _handleDragStart);
+      ship.addEventListener('dragend', _handleDragEnd);
+    });
+
+    const boxDivs = document.querySelectorAll('.box.player');
+    boxDivs.forEach(box => {
+      box.addEventListener('dragover', _handleDragOver);
+      box.addEventListener('dragenter', _handleDragEnter);
+      box.addEventListener('dragleave', _handleDragLeave);
+      box.addEventListener('drop', _handleDrop);
+    });
+  };
+  function _handleDragStart(ev) {
+    this.style.opacity = '0.4';
+    _dragged = ev.target;
+    ev.dataTransfer.setData('text/plain', this.id);
+  };
+  function _handleDragEnd(ev) {
+    this.style.opacity = '1';
+    const boxDivs = document.querySelectorAll('.box.player');
+    boxDivs.forEach(box => {
+      box.classList.remove('over');
+    });
+  };
+  function _handleDragOver(ev) {
+    ev.preventDefault();
+    return false;
+  };
+  function _handleDragEnter(ev) {
+    for (let i = 0; i < _dragged.parentElement.id[4]; i++) {
+      const boxID = `${this.id[0]}${this.id[1]}${Number(this.id[2]) + i}`;
+      document.querySelector(`#${boxID}`).classList.add('over');
+    };
+  };
+  function _handleDragLeave(ev) {
+    for (let i = 0; i < _dragged.parentElement.id[4]; i++) {
+      const boxID = `${this.id[0]}${this.id[1]}${Number(this.id[2]) + i}`;
+      document.querySelector(`#${boxID}`).classList.remove('over');
+    };
+  };
+  function _handleDrop(ev) {
+    ev.preventDefault();
+    const shipLength = Number(ev.dataTransfer.getData('text/plain')[4]);
+    const targetCoordinate = [Number(ev.target.id[1]), Number(ev.target.id[2])];
+    const placeShipResult = gameFlow.player.gameboard.placeShip(shipLength, targetCoordinate);
+    if (placeShipResult !== 'error, ship already in place' 
+        && placeShipResult !== 'error, outside of gameboard') {
+      const placedShip = _dragged.parentElement;
+      placedShip.classList.add('hidden');
+      placedShip.childNodes.forEach(shipbox => {shipbox.classList.add('hidden')});
+      _restartPlayerGameboard();
+    };
+  };
+  const _restartPlayerGameboard = () => {
+    const playerBoardCon = document.querySelector('.player-board-con');
+    const playerBoardMap = gameFlow.player.gameboard.getMap();
+    const newPlayerGameboard = dom.createPlayerGameboard(true, playerBoardMap);
+    playerBoardCon.replaceChild(newPlayerGameboard, playerBoardCon.children[0]);
+
+    const boxDivs = document.querySelectorAll('.box.player');
+    boxDivs.forEach(box => {
+      if (!box.classList.contains('ship')) {
+        box.addEventListener('dragover', _handleDragOver);
+        box.addEventListener('dragenter', _handleDragEnter);
+        box.addEventListener('dragleave', _handleDragLeave);
+        box.addEventListener('drop', _handleDrop);
+      };
+    });
+  };
+  return {initialize
+          };
 })();
 
 const dom = (() => {
@@ -39,11 +119,17 @@ const dom = (() => {
     headerDiv.append(header);
 
     const announceDiv = _createDiv('announce-con');
+    announceDiv.classList.add('hidden');
+
+    const shipStorageDiv = _createDiv('ship-storage-con');
+    const playerShipStorage = _createPlayerShipStorage();
+    const aiShipStorageDiv = _createDiv('ai-ship-storage-con');
+    shipStorageDiv.append(playerShipStorage, aiShipStorageDiv);
 
     const mainDiv = _createDiv('main-con');
     const playerBoardDiv = _createDiv('player-board-con');
     const playerBoardMap = gameFlow.player.gameboard.getMap();
-    const playerBoard = _createPlayerGameboard(true, playerBoardMap);
+    const playerBoard = createPlayerGameboard(true, playerBoardMap);
     playerBoardDiv.append(playerBoard);
     mainDiv.append(playerBoardDiv);
 
@@ -53,21 +139,45 @@ const dom = (() => {
     aiBoardDiv.append(startBtn);
     mainDiv.append(aiBoardDiv);
 
+    const fillerDiv = _createDiv('filler-div');
+
     const footerDiv = _createDiv('footer-con');
 
-    document.body.append(headerDiv, announceDiv, mainDiv, footerDiv);
+    document.body.append(headerDiv, announceDiv, shipStorageDiv, mainDiv, fillerDiv, footerDiv);
+
+    dragDrop.initialize();
   };
   const _createDiv = (...divNames) => {
     const div = document.createElement('div');
     divNames.forEach(divName => div.classList.add(divName));
     return div;
   };
-  const _createPlayerGameboard = (isPlayer, boardMap) => {
+  const _createShipDiv = (length, idName) => {
+    const div = _createDiv('storaged-ship');
+    div.id = idName;
+    for (let i = 0; i < length; i++) {
+      const box = _createDiv('shipbox');
+      box.id = `s${i}`;
+      div.append(box);
+    };
+    return div;
+  };
+  const _createShipDivs = (lengthArray) => {
+    const playerShipStorage = _createDiv('player-ship-storage');
+    lengthArray.forEach(length => {
+      playerShipStorage.append(_createShipDiv(length, `ship${length}`));
+    });
+    return playerShipStorage;
+  };
+  const _createPlayerShipStorage = () => {
+    return _createShipDivs([4, 3, 1, 1, 3, 2, 2, 2]);
+  };
+  const createPlayerGameboard = (isPlayer, boardMap) => {
     const gameboardDiv = _createDiv(isPlayer ? 'player-board' : 'ai-board');
     for (let i = 0; i < 10; i++) {
       for (let j = 0; j < 10; j++) {
         const box = _createDiv('box', isPlayer ? 'player' : 'ai');
-        box.id = `p${i}${j}`;
+        box.id = isPlayer ? `p${i}${j}` : `a${i}${j}`;
         if (boardMap[i][j] !== null) {
           box.classList.add(boardMap[i][j]);
           box.classList.add('ship');
@@ -87,7 +197,7 @@ const dom = (() => {
   };
   const _startGame = () => {
     const aiBoardMap = gameFlow.ai.gameboard.getMap();
-    const aiBoard = _createPlayerGameboard(false, aiBoardMap);
+    const aiBoard = createPlayerGameboard(false, aiBoardMap);
     const aiBoardDiv = document.querySelector('.ai-board-con');
     const aiStart = document.querySelector('.ai-start');
     aiBoardDiv.replaceChild(aiBoard, aiStart);
@@ -157,6 +267,7 @@ const dom = (() => {
   };
   const _announcePlayerWon = (isWon) => {
     const announceDiv = document.querySelector('.announce-con');
+    announceDiv.classList.remove('hidden');
     if (isWon) {
       announceDiv.innerText = 'You won!';
     } else {
@@ -166,6 +277,7 @@ const dom = (() => {
     resetBtn.innerText = 'Reset';
     resetBtn.className = 'reset-btn';
     resetBtn.addEventListener('click', () => {
+      announceDiv.classList.add('hidden');
       document.body.replaceChildren();
       dom.initialize();
     });
@@ -173,8 +285,9 @@ const dom = (() => {
     const boxes = document.querySelectorAll('.box.ai');
     boxes.forEach(box => {box.outerHTML = box.outerHTML});
   };
-  return {initialize
-          }
+  return {initialize,
+          createPlayerGameboard
+          };
 })();
 
 dom.initialize();

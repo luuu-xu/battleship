@@ -121,7 +121,6 @@ const Player = (name) => {
     };
   };
   const aiNextAttack = (gameboard, lastHitCoordinate) => {
-    // console.log('aiNextAttack: ' + lastHitCoordinate);
     const possibleCoordinates = _aiNextAttackPossibleCoordinates(gameboard, lastHitCoordinate);
 
     if (possibleCoordinates.length) {
@@ -160,7 +159,6 @@ const Player = (name) => {
         possibleCoordinates.push([lastX, lastY + 1]);
       };
     };
-    // console.log('_aiNextAttackPossibleCoordinates: ' + possibleCoordinates);
     return possibleCoordinates;
   };
   return {getName,

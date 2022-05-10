@@ -22,14 +22,88 @@ body {
 
 .announce-con {
   width: 100%;
-  height: 5%;
+  height: 15%;
   position: absolute;
-  top: 20%;
+  /* top: 20%; */
   font-size: 2rem;
-  /* font-weight: bold; */
+  font-weight: bold;
   display: flex;
   justify-content: center;
   align-items: center;
+  background: white;
+  border-bottom: 2px solid black;
+  border-top: 2px solid black;
+}
+
+.announce-con.hidden {
+  z-index: -9999;
+  border: none;
+}
+
+.ship-storage-con {
+  width: 100%;
+  height: 10%;
+  display: flex;
+  justify-content: center;
+  gap: 200px;
+}
+
+.player-ship-storage,
+.ai-ship-storage-con {
+  width: 422px;
+}
+
+.player-ship-storage {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.storaged-ship {
+  width: fit-content;
+  height: fit-content;
+  display: grid;
+  grid-template-columns: repeat(4, 40px);
+  gap: 2px;
+  background-color: black;
+  border: 2px solid black;
+}
+
+#s0 {
+  cursor: move;
+}
+
+.storaged-ship.hidden {
+  /* z-index: -9999; */
+  background-color: white;
+  border: 2px solid transparent;
+}
+
+#ship3 {
+  grid-template-columns: repeat(3, 40px);
+}
+
+#ship2 {
+  grid-template-columns: repeat(2, 40px);
+}
+
+#ship1 {
+  grid-template-columns: repeat(1, 40px);
+}
+
+.shipbox {
+  background-color: grey;
+  width: 40px;
+  height: 40px;
+}
+
+.shipbox.hidden {
+  z-index: -9999;
+}
+
+.filler-div {
+  width: 100%;
+  height: 10%;
 }
 
 .main-con {
@@ -93,6 +167,10 @@ body {
 
 .box.player.ship {
   /* border: 1px solid black; */
+  background-color: grey;
+}
+
+.box.player.over {
   background-color: grey;
 }
 
